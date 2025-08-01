@@ -2,6 +2,7 @@ import os
 import cv2
 import glob
 import numpy as np
+from lib.utils import get_latest_dir
 
 # 日本語ファイル名対応の読み込み
 def load_image_unicode(path):
@@ -85,14 +86,10 @@ def binarize(cropped_file_path_name, output_file_path_name, gamma=1.5):
 def crop_and_binarize(base_dir):
     import json
     rects = []
-
-    sorted_dirs = sorted(
-        [dir for dir in glob.glob(os.path.join(base_dir, 'capture_*')) if os.path.isdir(dir)], 
-        key = lambda x: int(x.split('_')[-1], 10),
-        reverse=True
-    )  # capture_YYYYMMDDHHMMSSの順にソート
-    if 0 < len(sorted_dirs):
-        for file in glob.glob(os.path.join(sorted_dirs[0], '*.png')):
+    latest_dir = get_latest_dir(base_dir, 'capture_*', key_func=lambda x: int(x.split('_')[-1], 10))
+    if latest_dir:
+        png_files = glob.glob(os.path.join(latest_dir, '*.png'))
+        for file in png_files:
             print(f'Processing {file}')
             rect = detect_cropped_rect(file)
             if rect:
@@ -109,8 +106,7 @@ def crop_and_binarize(base_dir):
             print(f'平均矩形: x={avg_x}, y={avg_y}, w={avg_w}, h={avg_h}')
 
             # 平均矩形で各画像を切り出し/透かし除去
-            for file in glob.glob(os.path.join(sorted_dirs[0], '*.png')):
-
+            for file in png_files:
                 filename = os.path.basename(file)
 
                 # 切り出す
